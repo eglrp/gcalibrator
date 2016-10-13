@@ -352,7 +352,7 @@ struct Operator<MyOperatorOverloads::SE3VMult<P, PV> > {
 template<typename P, typename PV> 
 inline cv::Vec<typename MyOperatorOverloads::MultiplyType<P,PV>::type, 4> operator *(const RigidTransforms::SE3<P> &se3, const cv::Vec<PV,4> &v) { 
 	
-  return Operator<MyOperatorOverloads::SE3VMult<P, PV> >(se3,v).compute();
+  return MyOperatorOverloads::Operator<MyOperatorOverloads::SE3VMult<P, PV> >(se3,v).compute();
 }
 
 /// Right-multiply by a standard 3-Vector
