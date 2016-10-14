@@ -1,32 +1,10 @@
-// -*- c++ -*-
-
+// **************** George Terzakis 2016 *********************
+//
+// This file is based on original TooN code:
 // Copyright (C) 2005,2009 Tom Drummond (twd20@cam.ac.uk),
 // Ed Rosten (er258@cam.ac.uk), Gerhard Reitmayr (gr281@cam.ac.uk)
 
-//All rights reserved.
-//
-//Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions
-//are met:
-//1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-//2. Redistributions in binary form must reproduce the above copyright
-//   notice, this list of conditions and the following disclaimer in the
-//   documentation and/or other materials provided with the distribution.
-//
-//THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND OTHER CONTRIBUTORS ``AS IS''
-//AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-//IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-//ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR OTHER CONTRIBUTORS BE
-//LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-//CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-//SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-//INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-//CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-//ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-//POSSIBILITY OF SUCH DAMAGE.
 
-/* This code mostly made by copying from se3.h !! */
 
 #ifndef SE2_H
 #define SE2_H
@@ -35,9 +13,7 @@
 #include "SO2.h"
 #include <iostream>
 
-#include "cv.hpp"
-#include "core.hpp"
-#include "highgui.hpp"
+#include "../OpenCV.h"
 
 
 namespace RigidTransforms {
@@ -52,7 +28,7 @@ namespace RigidTransforms {
 /// three numbers (in the space of the Lie Algebra). In this class, the first two parameters are a
 /// translation vector while the third is the amount of rotation in the plane as for SO2.
 
-template <typename Precision = DefaultPrecision>
+template <typename Precision = float>
 class SE2 {
 private:
 	SO2<Precision> R_;
@@ -107,6 +83,7 @@ public:
 	  
 	  return mat;
 	}
+	
 	/// Exponentiate a Vector in the Lie Algebra to generate a new SE2.
 	/// See the Detailed Description for details of this vector.
 	/// @param vect The Vector to exponentiate
@@ -131,7 +108,7 @@ public:
 	template <typename P>
 	SE2<typename MyOperatorOverloads::MultiplyType<Precision,P>::type> operator *(const SE2<P> &right) const { 
 		
-	  typedef typename typename MyOperatorOverloads::MultiplyType<Precision,P>::type P0;
+	  typedef typename MyOperatorOverloads::MultiplyType<Precision,P>::type P0;
 	  
 	  return SE2<P0>(R_*right.get_rotation(), t_ + R_.get_matrix()*right.get_translation()); 
 	}
@@ -177,27 +154,16 @@ public:
 	
 	  return result;
 	}
-	// overload with matrix type argument (should be 3x1 of course...)
-	cv::Vec<Precision, 3> adjoint(const cv::Mat_<Precision> &mv) const {
-		
-	  cv::Vec<Precision, 3> result;
-	  result[2] = mv(2, 0);
-	  //result.template slice<0,2>() = my_rotation * vect.template slice<0,2>();
-	  result[0] = R_.get_matrix()(0,0) * mv(0, 0) + R_.get_matrix()(0, 1) * mv(1, 0);	
-	  result[1] = R_.get_matrix()(1,0) * mv(0, 0) + R_.get_matrix()(1, 1) * mv(1, 0);	
-	  
-	  result[0] += mv(2, 0) * t_[1];
-	  result[1] -= mv(2, 0) * t_[0];
 	
-	  return result;
-	}
-
 	cv::Mat_<Precision> adjoint(const cv::Mat_<Precision> &M) const {
 		cv::Mat_<Precision> result(3, 3);
 		cv::Vec<Precision, 3> adj;
 		for(int i=0; i<3; ++i) {
 		  //result.T()[i] = adjoint(M.T()[i]); 
-		  adj = adjoint( cv::Vec(M(0, i), M(1, i), M(2, i) ) );
+		  adj = adjoint( cv::Vec<Precision, 3> ( M(0, i), 
+							 M(1, i), 
+							 M(2, i) ) 
+			       );
 		  result(0, i) = adj[0];
 		  result(1, i) = adj[1];
 		  result(2, i) = adj[2];
@@ -206,7 +172,10 @@ public:
 		
 		for(int i=0; i<3; ++i) {	
 		  //result[i] = adjoint(result[i]);
-		  adj = adjoint( cv::Vec(result(i, 0), result(i, 1), result(i, 2) )  );
+		  adj = adjoint( cv::Vec<Precision, 3>( result(i, 0), 
+							result(i, 1), 
+							result(i, 2) )  
+			       );
 		  result(i, 0) = adj[0];
 		  result(i, 1) = adj[1];
 		  result(i, 2) = adj[2];
@@ -223,17 +192,8 @@ public:
 /// @relates SE2
 template <class Precision>
 inline std::ostream& operator <<(std::ostream &os, const RigidTransforms::SE2<Precision> &se2){
-	/*std::streamsize fw = os.width();
 	
-	for(int i=0; i<2; i++){
-		os.width(fw);
-		os << se2.get_rotation().get_matrix()[i];
-		os.width(fw);
-		os << se2.get_translation()[i] << '\n';
-	}
-	return os;
-	*/
-	// Let's just relay the problem to OpenCV... Hope it works...
+	// Let's just relay the problem to OpenCV... Not bad a solution by the looks of it...
 	os << se2.get_rotation().get_matrix() << se2.get_translation() << '\n';
 }
 
@@ -276,9 +236,7 @@ struct Operator<MyOperatorOverloads::SE2VMult<P,PV> > {
 	cv::Vec<P0, 3> compute() const { 
 	     
 	     cv::Vec<P0, 3> res; 
-	     //res.template slice<0,2>()=lhs.get_rotation()*rhs.template slice<0,2>();
-	      //res.template slice<0,2>()+=lhs.get_translation() * rhs[2];
-	      //res[2] = rhs[2];
+	     
 	     res[0] = se2.get_rotation().get_matrix()(0,0) * v[0] + se2.get_rotation().get_matrix()(0,1) * v[1]; 
 	     res[1] = se2.get_rotation().get_matrix()(1,0) * v[0] + se2.get_rotation().get_matrix()(1,1) * v[1]; 
 	      
@@ -312,14 +270,15 @@ struct Operator<MyOperatorOverloads::VSE2Mult<PV,P> > {
 	cv::Vec<P0, 3> compute() const { 
 	     
 	     cv::Vec<P0, 3> res; 
-	     //res.template slice<0,2>()=lhs.get_rotation()*rhs.template slice<0,2>();
-	      //res.template slice<0,2>()+=lhs.get_translation() * rhs[2];
-	      //res[2] = rhs[2];
-	     res[0] = se2.get_rotation().get_matrix()(0,0) * v[0] + se2.get_rotation().get_matrix()(1,0) * v[1]; 
-	     res[1] = se2.get_rotation().get_matrix()(0,1) * v[0] + se2.get_rotation().get_matrix()(1,1) * v[1]; 
+	     
+	     cv::Mat_<P> R = se2.get_rotation.get_matrix();
+	     cv::Vec<P, 2> t = se2.get_translation();
+	     
+	     res[0] = R(0,0) * v[0] + R(1,0) * v[1]; 
+	     res[1] = R(0,1) * v[0] + R(1,1) * v[1]; 
 	      
 	     
-	     res[2] = se2.get_translation()[0] * v[0] + se2.get_translation()[1] * v[1] + v[2];
+	     res[2] = t*v + v[2];
 	     
 	     
 	     return res;
@@ -328,11 +287,10 @@ struct Operator<MyOperatorOverloads::VSE2Mult<PV,P> > {
 };
 
 
-} // end namespace MyOperatorOverloads
+} // end namespace clause for MyOperatorOverloads
 
 
-/// Right-multiply with a Vector<3>
-/// @relates SE2
+/// Right-multiply with a 3-vector
 template<typename P, typename PV>
 inline cv::Vec<typename MyOperatorOverloads::MultiplyType<P,PV>::type, 3> operator *(const RigidTransforms::SE2<P> &se2, const cv::Vec<PV, 3> &v) {
 	
@@ -341,14 +299,19 @@ inline cv::Vec<typename MyOperatorOverloads::MultiplyType<P,PV>::type, 3> operat
 
 
 
-/// Right-multiply with a Vector<2> (special case, extended to be a homogeneous vector)
-/// @relates SE2
+/// Right-multiply with a 2-vector (result: R*v + t)
 template <typename P, typename PV>
 inline cv::Vec<typename MyOperatorOverloads::MultiplyType<P,PV>::type, 2> operator *(const RigidTransforms::SE2<P> &se2, const cv::Vec<PV, 2> &v) {
 	
+  
   cv::Vec3f v3(v[0], v[1],1); // turning it to a homogeneous vector
  
-  return se2 * v3;
+  typedef typename MyOperatorOverloads::MultiplyType<PV, P>::type P0;
+  
+  cv::Vec<P0, 2> result = se2 * v3;
+  
+  return cv::Vec<P0, 2>( result[0], 
+			 result[1] );
 }
 
 
@@ -362,14 +325,12 @@ inline cv::Vec<typename MyOperatorOverloads::MultiplyType<P,PV>::type, 2> operat
 
 
 
-/// Left-multiply with a Vector<3>
-/// @relates SE2
+/// Left-multiply with a 3-vector (i.e. homogeneous representation)
 template<typename PV, typename P>
-inline cv::Vec<typename MyOperatorOverloads::MultiplyType<PV,P, 3>::type> operator *(const cv::Vec<PV> &v, const RigidTransforms::SE2<P> &se2) {
+inline cv::Vec<typename MyOperatorOverloads::MultiplyType<PV, P>::type, 3> operator *(const cv::Vec<PV, 3> &v, const RigidTransforms::SE2<P> &se2) {
 	
   return MyOperatorOverloads::Operator<MyOperatorOverloads::VSE2Mult<PV,P> >(v,se2).compute();
 }
-
 
 
 //////////////////
@@ -399,9 +360,9 @@ struct Operator<SE2MMult<P, PM> > {
 	
 };
 
-}
+} // End namespace MyOperatorOverloads interlopping clause
 
-/// Right-multiply with a Matrix<3>
+/// Right-multiply with a 3x3 matrix
 /// @relates SE2
 template <typename P, typename PM> 
 inline cv::Mat_<typename MyOperatorOverloads::MultiplyType<P,PM>::type> operator *(const RigidTransforms::SE2<P> &se2, const cv::Mat_<PM> &M) {
@@ -444,26 +405,33 @@ inline cv::Mat_<typename MyOperatorOverloads::MultiplyType<PM,P>::type> operator
   return MyOperatorOverloads::Operator<MyOperatorOverloads::MSE2Mult<PM, P> >(M, se2);
 }
 
+
+// This is a very robust exponential computation!
+// It really looks into numerical degeneracies close to zero 
+// (which INCIDENTALLY dobnt exist with sterographic coordinates!)
+
 template <typename Precision>
 template <typename PV>
 inline RigidTransforms::SE2<Precision> RigidTransforms::SE2<Precision>::exp(const cv::Vec<PV, 3> &mu)
 {
-	//SizeMismatch<3,S>::test(3, mu.size());
-
+	// George: SOME DAY, ONE DAY, I need to do something about bad vector/matrix sizes............
+	
 	static const Precision one_6th = 1.0/6.0;
 	static const Precision one_20th = 1.0/20.0;
   
 	SE2<Precision> result;
   
-	const Precision theta = mu[2];
+	const Precision theta = mu[2]; // angle is stored in the last corindate of the 2D pose vector
 	const Precision theta_sq = theta * theta;
   
+	// the cross prodict of the axis-angle vector with the translation (is now very easy to compute due to the two zeros in the AA vector)
 	const cv::Vec<Precision, 2> cross( -theta * mu[1], theta * mu[0] );
 	result.get_rotation() = SO2<Precision>::exp(theta);
 
 	if (theta_sq < 1e-8){
 		//result.get_translation() = mu.template slice<0,2>() + 0.5 * cross;
-		result.get_translation() = cv::Vec<Precision, 2>( mu[0] + 0.5 * cross[0], mu[1] + 0.5 * cross[1] );
+		result.get_translation() = cv::Vec<Precision, 2>( mu[0] + 0.5 * cross[0], 
+								  mu[1] + 0.5 * cross[1] );
 	  
 	} else {
 		Precision A, B;
@@ -472,18 +440,21 @@ inline RigidTransforms::SE2<Precision> RigidTransforms::SE2<Precision>::exp(cons
 			B = 0.5 - 0.25 * one_6th * theta_sq;
 		} else {
 			const Precision inv_theta = (1.0/theta);
-			const Precision sine = result.get_rotation().get_matrix()[1][0];
-			const Precision cosine = result.get_rotation().get_matrix()[0][0];
+			const Precision sine = result.get_rotation().get_matrix()(1, 0);
+			const Precision cosine = result.get_rotation().get_matrix()(0, 0);
 			A = sine * inv_theta;
 			B = (1 - cosine) * (inv_theta * inv_theta);
 		}
 		//result.get_translation() = TooN::operator*(A,mu.template slice<0,2>()) + TooN::operator*(B,cross);
-		result.get_translation() = cv::Vec<Precision, 2>(A * mu[0] + B * cross[0], A * mu[1] + B * cross[1]);
+		result.get_translation() = cv::Vec<Precision, 2>( A * mu[0] + B * cross[0], 
+								  A * mu[1] + B * cross[1]);
 	  
 	}
 	return result;
 }
  
+// Most importantly, This is a brilliant logarithmic function, especially with all the problems incurred by the periodicity 
+// of the Lie/Euler vectors and the singularity of the exponential map at zero!
 template <typename Precision>
 inline cv::Vec<Precision, 3> RigidTransforms::SE2<Precision>::ln(const RigidTransforms::SE2<Precision> &se2) {
 	const Precision theta = se2.get_rotation().ln();
@@ -495,10 +466,12 @@ inline cv::Vec<Precision, 3> RigidTransforms::SE2<Precision>::ln(const RigidTran
 	const SO2<Precision> halfrotator(theta * -0.5);
 	cv::Vec<Precision, 3> result;
 	//result.template slice<0,2>() = (halfrotator * se2.get_translation())/(2 * shtot);
-	result[0] = ( halfrotator.get_matrix()(0,0) * se2.get_translation()[0] + 
-		      halfrotator.get_matrix()(0,1) * se2.get_translation()[1]  ) / (2 * shtot);
-	result[1] = ( halfrotator.get_matrix()(1,0) * se2.get_translation()[0] + 
-		      halfrotator.get_matrix()(1,1) * se2.get_translation()[1]  ) / (2 * shtot);
+	cv::Mat_<Precision> R = halfrotator.get_matrix();
+	cv::Vec<Precision, 2> t = se2.get_translation();
+	result[0] = ( R(0,0) * t[0] + 
+		      R(0,1) * t[1]  ) / (2 * shtot);
+	result[1] = ( R(1,0) * t[0] + 
+		      R(1,1) * t[1]  ) / (2 * shtot);
 	
 	result[2] = theta;
 	
@@ -506,12 +479,10 @@ inline cv::Vec<Precision, 3> RigidTransforms::SE2<Precision>::ln(const RigidTran
 }
 
 /// Multiply a SO2 with anSE2
-/// @relates SE2
-/// @relates SO2
 template <typename Precision>
 inline RigidTransforms::SE2<Precision> operator *(const RigidTransforms::SO2<Precision> &so2, const RigidTransforms::SE2<Precision> &se2){
 	
-  return RigidTransforms::SE2<Precision>( so2*se2.get_rotation(), so2.get_matrix()*se2.get_translation());
+  return RigidTransforms::SE2<Precision>( so2*se2.get_rotation(), so2.get_matrix()*se2.get_translation() );
 }
 
 

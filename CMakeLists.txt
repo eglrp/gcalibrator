@@ -82,7 +82,7 @@ set(PROJ_SOURCE
 	${CMAKE_SOURCE_DIR}/CameraCalibrator.cpp
 	${CMAKE_SOURCE_DIR}/GLWindow2.cpp	
 	${CMAKE_SOURCE_DIR}/GLWindowMenu.cpp
-	${CMAKE_SOURCE_DIR}/VideoSource_Linux_OpenCV.cpp
+	${CMAKE_SOURCE_DIR}/VideoSource.cpp
 	${CMAKE_SOURCE_DIR}/CalibImage.cpp
 	${CMAKE_SOURCE_DIR}/CalibCornerPatch.cpp
 	${CMAKE_SOURCE_DIR}/ATANCamera.cpp
@@ -175,5 +175,5 @@ target_link_libraries(${PROJ_NAME}
 		      )
 
 
-install(TARGETS ${PROJ_NAME} RUNTIME DESTINATION ${CMAKE_SOURCE_DIR})
+#install(TARGETS ${PROJ_NAME} RUNTIME DESTINATION ${CMAKE_SOURCE_DIR})
 
