@@ -274,9 +274,11 @@ cv::Mat_<float> ATANCamera::GetProjectionDerivs()
   }
   // otherwise, things get tough .... we need to get the derivative of the fraction in terms of xe and ye inside square->square root -> tangent....
   else {
-      dFracBydx =  mdWinv * ( k / (1 + k*k*ru*ru) - mdLastFactor ) * x / (ru*ru); 
+      dFracBydx =  ( mdWinv *  k / (1 + k*k*ru*ru) - mdLastFactor ) * x / (ru*ru); 
       
-      dFracBydy =  mdWinv * ( k / (1 + k*k*ru*ru) - mdLastFactor ) * y / (ru*ru); 
+      dFracBydy =  ( mdWinv *  k / (1 + k*k*ru*ru) - mdLastFactor ) * y / (ru*ru); 
+      
+      
     }
   
   cv::Mat_<float> m2Derivs(2, 2);

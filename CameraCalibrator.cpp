@@ -80,7 +80,7 @@ CameraCalibrator::CameraCalibrator() : mGLWindow(mVideoSource.getSize(), "Camera
   
   PV3::Register(mpvnOptimizing, "CameraCalibrator.Optimize", 0, SILENT);
   PV3::Register(mpvnShowImage, "CameraCalibrator.Show", 0, SILENT);
-  PV3::Register(mpvnDisableDistortion, "CameraCalibrator.NoDistortion", 1, SILENT);
+  PV3::Register(mpvnDisableDistortion, "CameraCalibrator.NoDistortion", 0, SILENT);
     
   GUI.ParseLine("GLWindow.AddMenu CalibMenu");
   GUI.ParseLine("CalibMenu.AddMenuButton Live GrabFrame CameraCalibrator.GrabNextFrame");
