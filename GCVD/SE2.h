@@ -195,6 +195,8 @@ inline std::ostream& operator <<(std::ostream &os, const RigidTransforms::SE2<Pr
 	
 	// Let's just relay the problem to OpenCV... Not bad a solution by the looks of it...
 	os << se2.get_rotation().get_matrix() << se2.get_translation() << '\n';
+	
+	return os;
 }
 
 /// Read an SE2 from a stream 
